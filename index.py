@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
-from keras import backend as K
+import tensorflow.keras.backend as K
 from keras.models import Model
 from keras.layers import Input, Conv2D, MaxPooling2D, Reshape, Bidirectional, LSTM, Dense, Lambda, Activation, BatchNormalization, Dropout
 from tensorflow.keras.optimizers import Adam
@@ -177,11 +177,7 @@ inner = Bidirectional(LSTM(256, return_sequences=True), name = 'lstm2')(inner)
 ## OUTPUT
 inner = Dense(num_of_characters, kernel_initializer='he_normal',name='dense2')(inner)
 y_pred = Activation('softmax', name='softmax')(inner)
-
-model = Model(inputs=input_data, outputs=y_pred)
-model.summary()
-import tensorflow as tf
-
+ 
 def ctc_lambda_func(args):
     """
     Computes the CTC loss for given inputs.
@@ -218,6 +214,18 @@ def ctc_lambda_func(args):
     # Return the reduced mean CTC loss
     return tf.reduce_mean(ctc_loss)
 
+
+# Check if the model is already trained and saved
+# model_path = 'model_trained.h5'
+# if os.path.exists(model_path):
+#     print("Loading pre-trained model...")
+#     model = tf.keras.models.load_model(model_path, custom_objects={'ctc_lambda_func': ctc_lambda_func})
+# else:
+# model = Model(inputs=input_data, outputs=y_pred)
+# model.summary()
+
+print("Training model from scratch...")
+
 labels = Input(name='gtruth_labels', shape=[max_str_len], dtype='float32')
 input_length = Input(name='input_length', shape=[1], dtype='int64')
 label_length = Input(name='label_length', shape=[1], dtype='int64')
@@ -233,11 +241,24 @@ model_final.compile(
 
 model_final.fit(x=[train_x, train_y, train_input_len, train_label_len], y=train_output, 
                 validation_data=([valid_x, valid_y, valid_input_len, valid_label_len], valid_output),
-                epochs=60, batch_size=128)
+                epochs=1, batch_size=128)
 
+# Save the entire model (architecture + weights)
+model_final.save('model_trained.h5')
+
+# Get predictions from the model
 preds = model.predict(valid_x)
-decoded = K.get_value(K.ctc_decode(preds, input_length=np.ones(preds.shape[0])*preds.shape[1], 
-                                   greedy=True)[0][0])
+
+# Decode the predictions using CTC decoding (greedy decoding)
+decoded_first = K.ctc_decode(preds, input_length=np.ones(preds.shape[0]) * preds.shape[1], greedy=True)
+
+# Extract the decoded values (first element from the decoded result, which is a list of tensors)
+decodedS = decoded_first[0]  # This is still a tensor, not a list
+
+print(decodedS)
+
+decoded = decodedS[0]  # Convert the tensor to a NumPy array
+print(decoded)
 
 prediction = []
 for i in range(valid_size):
