@@ -216,13 +216,15 @@ def ctc_lambda_func(args):
 
 
 # Check if the model is already trained and saved
-# model_path = 'model_trained.h5'
+# model_path = 'model/model_trained.h5'
 # if os.path.exists(model_path):
 #     print("Loading pre-trained model...")
 #     model = tf.keras.models.load_model(model_path, custom_objects={'ctc_lambda_func': ctc_lambda_func})
 # else:
-# model = Model(inputs=input_data, outputs=y_pred)
-# model.summary()
+
+
+model = Model(inputs=input_data, outputs=y_pred)
+model.summary()
 
 print("Training model from scratch...")
 
